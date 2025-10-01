@@ -2,8 +2,8 @@
 # NCU Script Generator - Auto Generated Script
 # ========================================
 #
-# Script ID: script_1759310477850_azw0p1vbh
-# Generated: 2025-10-01T09:21:18.662Z
+# Script ID: script_1759311864886_hfkqr6r5y
+# Generated: 2025-10-01T09:44:25.582Z
 # Asset Type: OS
 # Script Type: OS-Linux
 # Target Product: Unknown
@@ -34,110 +34,62 @@
 ```bash
 #!/bin/bash
 
-# === (x)inetd 설정 파일 보호 점검 결과 ===
-# 스크립트 정보: U-10
+# === /etc/hosts 소유자·권한 점검 스크립트 ===
+# 스크립트 ID: U-09
+# 카테고리: 파일보안
+# 난이도: medium
+# 위험도: medium
 # 생성 시간: $(date)
-# 설정 적용: 파일 경로들: /etc/inetd.conf, /etc/xinetd.conf, /etc/xinetd.d
-#              파일 권한 허용값: 644, 600
-#              허용 소유자:그룹: root:root
+# 설정 적용: /etc/hosts 경로: /etc/hosts, 권한 허용값: 644, 허용 소유자:그룹: root:root
 
 # 점검 시간
+echo "=== /etc/hosts 소유자·권한 점검 결과 ==="
 echo "점검 시간: $(date)"
+echo "설정 적용: /etc/hosts 경로: /etc/hosts, 권한 허용값: 644, 허용 소유자:그룹: root:root"
+echo ""
 
-# 점검 결과 초기화
-overall_status="Good"
-issue_count=0
+# 점검 항목 1: 파일 존재 여부 확인
+if [ ! -e /etc/hosts ]; then
+    echo "1. /etc/hosts 파일 존재 여부"
+    echo "   [FAIL] /etc/hosts 파일이 존재하지 않습니다."
+    echo ""
+    echo "=== 점검 결과 요약 ==="
+    echo "전체 평가: Vulnerable"
+    echo "발견된 문제: 1개"
+    echo "권장 조치사항: /etc/hosts 파일을 생성하고 적절한 내용을 추가하세요."
+    exit 1
+fi
 
-# 점검 함수 정의
-check_file_security() {
-    local file_path=$1
-    local expected_permissions=$2
-    local expected_owner_group=$3
-
-    if [ ! -e "$file_path" ]; then
-        echo "1. $file_path 파일 존재 여부"
-        echo "   [FAIL] 파일이 존재하지 않습니다."
-        overall_status="Vulnerable"
-        ((issue_count++))
-        return
-    fi
-
-    # 파일 권한 점검
-    actual_permissions=$(stat -c "%a" "$file_path")
-    if [[ "$actual_permissions" != "$expected_permissions" ]]; then
-        echo "2. $file_path 파일 권한 점검"
-        echo "   [FAIL] 권한이 $actual_permissions 입니다. (허용: $expected_permissions)"
-        overall_status="Vulnerable"
-        ((issue_count++))
-    else
-        echo "2. $file_path 파일 권한 점검"
-        echo "   [PASS] 권한이 적절합니다."
-    fi
-
-    # 파일 소유자:그룹 점검
-    actual_owner_group=$(stat -c "%U:%G" "$file_path")
-    if [[ "$actual_owner_group" != "$expected_owner_group" ]]; then
-        echo "3. $file_path 파일 소유자:그룹 점검"
-        echo "   [FAIL] 소유자:그룹이 $actual_owner_group 입니다. (허용: $expected_owner_group)"
-        overall_status="Vulnerable"
-        ((issue_count++))
-    else
-        echo "3. $file_path 파일 소유자:그룹 점검"
-        echo "   [PASS] 소유자:그룹이 적절합니다."
-    fi
-}
-
-# /etc/xinetd.d 디렉터리 점검
-check_directory_security() {
-    local dir_path=$1
-    local expected_permissions=$2
-    local expected_owner_group=$3
-
-    if [ ! -d "$dir_path" ]; then
-        echo "4. $dir_path 디렉터리 존재 여부"
-        echo "   [FAIL] 디렉터리가 존재하지 않습니다."
-        overall_status="Vulnerable"
-        ((issue_count++))
-        return
-    fi
-
-    # 디렉터리 권한 점검
-    actual_permissions=$(stat -c "%a" "$dir_path")
-    if [[ "$actual_permissions" != "$expected_permissions" ]]; then
-        echo "5. $dir_path 디렉터리 권한 점검"
-        echo "   [FAIL] 권한이 $actual_permissions 입니다. (허용: $expected_permissions)"
-        overall_status="Vulnerable"
-        ((issue_count++))
-    else
-        echo "5. $dir_path 디렉터리 권한 점검"
-        echo "   [PASS] 권한이 적절합니다."
-    fi
-
-    # 디렉터리 소유자:그룹 점검
-    actual_owner_group=$(stat -c "%U:%G" "$dir_path")
-    if [[ "$actual_owner_group" != "$expected_owner_group" ]]; then
-        echo "6. $dir_path 디렉터리 소유자:그룹 점검"
-        echo "   [FAIL] 소유자:그룹이 $actual_owner_group 입니다. (허용: $expected_owner_group)"
-        overall_status="Vulnerable"
-        ((issue_count++))
-    else
-        echo "6. $dir_path 디렉터리 소유자:그룹 점검"
-        echo "   [PASS] 소유자:그룹이 적절합니다."
-    fi
-}
-
-# 점검 수행
-check_file_security "/etc/inetd.conf" "644" "root:root"
-check_file_security "/etc/xinetd.conf" "644" "root:root"
-check_directory_security "/etc/xinetd.d" "755" "root:root"
-
-# === 점검 결과 요약 ===
-echo "=== 점검 결과 요약 ==="
-echo "전체 평가: $overall_status"
-echo "발견된 문제: $issue_count 개"
-if [ "$overall_status" == "Vulnerable" ]; then
-    echo "권장 조치사항: 파일 및 디렉터리의 권한 및 소유자 설정을 점검하고, 적절히 수정하세요."
+# 점검 항목 2: 파일 소유자 및 그룹 확인
+owner_group=$(stat -c "%U:%G" /etc/hosts)
+if [ "$owner_group" != "root:root" ]; then
+    echo "2. /etc/hosts 소유자 및 그룹 확인"
+    echo "   [FAIL] 현재 소유자:그룹은 $owner_group 입니다. (허용: root:root)"
 else
-    echo "시스템 설정이 적절합니다."
+    echo "2. /etc/hosts 소유자 및 그룹 확인"
+    echo "   [PASS] 소유자:그룹이 올바르게 설정되어 있습니다."
+fi
+
+# 점검 항목 3: 파일 권한 확인
+permissions=$(stat -c "%a" /etc/hosts)
+if [ "$permissions" != "644" ]; then
+    echo "3. /etc/hosts 파일 권한 확인"
+    echo "   [FAIL] 현재 권한은 $permissions 입니다. (허용: 644)"
+else
+    echo "3. /etc/hosts 파일 권한 확인"
+    echo "   [PASS] 파일 권한이 올바르게 설정되어 있습니다."
+fi
+
+# 점검 결과 요약
+echo ""
+echo "=== 점검 결과 요약 ==="
+if [ "$owner_group" == "root:root" ] && [ "$permissions" == "644" ]; then
+    echo "전체 평가: Good"
+    echo "발견된 문제: 0개"
+    echo "권장 조치사항: 없음"
+else
+    echo "전체 평가: Vulnerable"
+    echo "발견된 문제: 1개 이상"
+    echo "권장 조치사항: /etc/hosts 파일의 소유자:그룹을 root:root로, 권한을 644로 설정하세요."
 fi
 ```
