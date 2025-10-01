@@ -2,8 +2,8 @@
 # NCU Script Generator - Auto Generated Script
 # ========================================
 #
-# Script ID: script_1759284050881_ko01oty61
-# Generated: 2025-10-01T02:00:51.898Z
+# Script ID: script_1759285374273_84690y3fp
+# Generated: 2025-10-01T02:22:54.910Z
 # Asset Type: OS
 # Script Type: OS-Linux
 # Target Product: Unknown
@@ -15,7 +15,7 @@
 # - Full Path: /2025-10-01-11h/OS--Unknown--OSLinux.sh
 #
 # Configuration:
-# - Target OS: 
+# - Target OS: Linux
 # - Process Name: 
 # - Config Path: 
 # - Account Name: 
@@ -33,68 +33,64 @@
 
 ```bash
 #!/bin/bash
-
-# === 계정 잠금 임계값 설정 점검 스크립트 ===
-# 스크립트 ID: U-03
-# 카테고리: 계정관리
-# 난이도: medium
-# 위험도: medium
+# U-07: /etc/passwd 소유자·권한 점검 스크립트
 # 생성 시간: $(date)
-# PAM system-auth 경로: /etc/pam.d/system-auth
-# 실패 허용 횟수(deny): 5
+# 설정값 요약: /etc/passwd 경로=/etc/passwd, 권한 허용값=644, 허용 소유자:그룹=root:root
 
-# 점검 시간
-echo "=== 계정 잠금 임계값 설정 점검 결과 ==="
+echo "=== /etc/passwd 소유자·권한 점검 결과 ==="
 echo "점검 시간: $(date)"
-echo "설정 적용: PAM 경로=/etc/pam.d/system-auth, 실패 허용 횟수=5"
+echo "설정 적용: /etc/passwd 경로=/etc/passwd, 권한 허용값=644, 허용 소유자:그룹=root:root"
 
-# PAM 설정 파일 경로
-PAM_FILE="/etc/pam.d/system-auth"
-DENY_VALUE=5
-
-# 파일 존재 여부 확인
-if [ ! -f "$PAM_FILE" ]; then
-    echo "1. PAM 설정 파일 존재 여부"
-    echo "   [FAIL] $PAM_FILE 파일이 존재하지 않습니다."
-    echo "=== 점검 결과 요약 ==="
-    echo "전체 평가: Vulnerable"
-    echo "발견된 문제: 1개"
-    echo "권장 조치사항: $PAM_FILE 파일이 존재하는지 확인하고, 올바른 경로를 지정하세요."
-    exit 1
-fi
-
-# 파일 읽기 권한 확인
-if [ ! -r "$PAM_FILE" ]; then
-    echo "1. PAM 설정 파일 읽기 권한"
-    echo "   [FAIL] $PAM_FILE 파일에 읽기 권한이 없습니다."
-    echo "=== 점검 결과 요약 ==="
-    echo "전체 평가: Vulnerable"
-    echo "발견된 문제: 1개"
-    echo "권장 조치사항: 파일에 읽기 권한을 부여하세요."
-    exit 1
-fi
-
-# 계정 잠금 임계값 설정 확인
-LOCK_SETTING=$(grep -E "pam_tally2.so.*deny=$DENY_VALUE" "$PAM_FILE")
-
-if [ -n "$LOCK_SETTING" ]; then
-    echo "1. 계정 잠금 임계값 설정"
-    echo "   [PASS] 계정 잠금 임계값이 올바르게 설정되어 있습니다."
+# /etc/passwd 파일 존재 여부 확인
+if [ -f /etc/passwd ]; then
+    # 파일 소유자 및 권한 확인
+    OWNER=$(stat -c "%U:%G" /etc/passwd)
+    PERM=$(stat -c "%a" /etc/passwd)
+    
+    echo "1. /etc/passwd 파일 정보:"
+    echo "   소유자: $OWNER"
+    echo "   권한: $PERM"
+    
+    # 소유자 점검
+    if [ "$OWNER" = "root:root" ]; then
+        echo "   [PASS] 소유자 설정이 적절합니다."
+    else
+        echo "   [FAIL] 소유자 설정을 검토해야 합니다."
+    fi
+    
+    # 권한 점검
+    if [ "$PERM" = "644" ]; then
+        echo "   [PASS] 권한 설정이 적절합니다."
+    else
+        echo "   [FAIL] 권한 설정을 검토해야 합니다 (권장: 644)."
+    fi
+    
+    # 파일 내용 기본 점검
+    echo "2. 파일 내용 점검:"
+    USER_COUNT=$(wc -l < /etc/passwd)
+    echo "   등록된 사용자 수: $USER_COUNT"
+    
+    # UID 0 계정 점검
+    ROOT_COUNT=$(awk -F: '$3==0' /etc/passwd | wc -l)
+    echo "   UID 0 계정 수: $ROOT_COUNT"
+    if [ "$ROOT_COUNT" -eq 1 ]; then
+        echo "   [PASS] root 계정만 UID 0을 사용합니다."
+    else
+        echo "   [FAIL] 여러 계정이 UID 0을 사용합니다."
+    fi
+    
 else
-    echo "1. 계정 잠금 임계값 설정"
-    echo "   [FAIL] 계정 잠금 임계값이 올바르게 설정되어 있지 않습니다."
+    echo "   [FAIL] /etc/passwd 파일이 존재하지 않습니다."
 fi
 
-# 점검 결과 요약
-if [ -n "$LOCK_SETTING" ]; then
-    echo "=== 점검 결과 요약 ==="
+echo "=== 점검 결과 요약 ==="
+if [ "$OWNER" = "root:root" ] && [ "$PERM" = "644" ] && [ "$ROOT_COUNT" -eq 1 ]; then
     echo "전체 평가: Good"
     echo "발견된 문제: 0개"
-    echo "권장 조치사항: 설정이 올바르게 적용되어 있습니다."
+    echo "권장 조치사항: 없음"
 else
-    echo "=== 점검 결과 요약 ==="
     echo "전체 평가: Vulnerable"
-    echo "발견된 문제: 1개"
-    echo "권장 조치사항: $PAM_FILE 파일에 'pam_tally2.so deny=$DENY_VALUE' 설정을 추가하세요."
+    echo "발견된 문제: 1개 이상"
+    echo "권장 조치사항: /etc/passwd 파일의 소유자 및 권한 설정을 검토하고, UID 0 계정을 확인하세요."
 fi
 ```
