@@ -2,8 +2,8 @@
 # NCU Script Generator - Auto Generated Script
 # ========================================
 #
-# Script ID: script_1759297868245_tx12crujv
-# Generated: 2025-10-01T05:51:09.435Z
+# Script ID: script_1759298198435_tc7eb0ugi
+# Generated: 2025-10-01T05:56:39.273Z
 # Asset Type: OS
 # Script Type: OS-Linux
 # Target Product: Unknown
@@ -34,64 +34,71 @@
 ```bash
 #!/bin/bash
 
-# === 파일/디렉터리 소유자 설정 점검 스크립트 ===
-# ID: U-06
+# === 패스워드 파일 보호 점검 스크립트 ===
+# 스크립트 ID: U-04
 # 카테고리: 파일보안
 # 난이도: medium
 # 위험도: medium
 # 생성 시간: $(date)
-# 설정 적용: 중요 파일 목록 - /etc/passwd, /etc/shadow, /etc/group, 허용 소유자:그룹 - root:root
+# 설정값 요약:
+#   /etc/passwd 경로: /etc/passwd
+#   /etc/shadow 경로: /etc/shadow
+#   passwd 권한 허용값: 644
+#   shadow 권한 허용값: 600, 640
 
-# 점검할 파일 목록
-files=("/etc/passwd" "/etc/shadow" "/etc/group")
-# 허용 소유자 및 그룹
-allowed_owner="root"
-allowed_group="root"
-
-# 점검 결과 초기화
-pass_count=0
-fail_count=0
-
-# === 점검 로직 ===
-echo "=== 파일/디렉터리 소유자 설정 점검 결과 ==="
+# 점검 시간
+echo "=== 패스워드 파일 보호 점검 결과 ==="
 echo "점검 시간: $(date)"
-echo "설정 적용: 중요 파일 목록 - ${files[*]}, 허용 소유자:그룹 - $allowed_owner:$allowed_group"
+echo "설정 적용: /etc/passwd 권한 644, /etc/shadow 권한 600 또는 640"
+
+# 점검 결과 변수 초기화
+overall_status="Good"
+issues_found=0
+
+# /etc/passwd 파일 권한 점검
 echo ""
-
-# 각 파일에 대해 소유자 및 그룹 점검
-for file in "${files[@]}"; do
-    if [ -e "$file" ]; then
-        # 파일의 소유자와 그룹을 가져옴
-        owner=$(stat -c '%U' "$file")
-        group=$(stat -c '%G' "$file")
-
-        # 소유자 및 그룹이 허용된 값과 일치하는지 확인
-        if [ "$owner" == "$allowed_owner" ] && [ "$group" == "$allowed_group" ]; then
-            echo "1. [$file]"
-            echo "   [PASS] 소유자 및 그룹이 올바르게 설정되어 있습니다."
-            ((pass_count++))
-        else
-            echo "1. [$file]"
-            echo "   [FAIL] 소유자 또는 그룹이 올바르지 않습니다. (현재: $owner:$group)"
-            ((fail_count++))
-        fi
+echo "1. /etc/passwd 파일 권한 점검"
+if [ -e /etc/passwd ]; then
+    passwd_perm=$(stat -c "%a" /etc/passwd)
+    if [ "$passwd_perm" -eq 644 ]; then
+        echo "   [PASS] /etc/passwd 파일의 권한이 644로 설정되어 있습니다."
     else
-        echo "1. [$file]"
-        echo "   [FAIL] 파일이 존재하지 않거나 접근 권한이 없습니다."
-        ((fail_count++))
+        echo "   [FAIL] /etc/passwd 파일의 권한이 $passwd_perm로 설정되어 있습니다. (권장: 644)"
+        overall_status="Vulnerable"
+        issues_found=$((issues_found + 1))
     fi
-    echo ""
-done
-
-# === 점검 결과 요약 ===
-echo "=== 점검 결과 요약 ==="
-if [ "$fail_count" -eq 0 ]; then
-    echo "전체 평가: Good"
 else
-    echo "전체 평가: Vulnerable"
+    echo "   [FAIL] /etc/passwd 파일이 존재하지 않습니다."
+    overall_status="Vulnerable"
+    issues_found=$((issues_found + 1))
 fi
-echo "발견된 문제: $fail_count 개"
-if [ "$fail_count" -gt 0 ]; then
-    echo "권장 조치사항: 파일의 소유자 및 그룹을 $allowed_owner:$allowed_group 로 설정하세요."
+
+# /etc/shadow 파일 권한 점검
+echo ""
+echo "2. /etc/shadow 파일 권한 점검"
+if [ -e /etc/shadow ]; then
+    shadow_perm=$(stat -c "%a" /etc/shadow)
+    if [ "$shadow_perm" -eq 600 ] || [ "$shadow_perm" -eq 640 ]; then
+        echo "   [PASS] /etc/shadow 파일의 권한이 $shadow_perm로 설정되어 있습니다."
+    else
+        echo "   [FAIL] /etc/shadow 파일의 권한이 $shadow_perm로 설정되어 있습니다. (권장: 600 또는 640)"
+        overall_status="Vulnerable"
+        issues_found=$((issues_found + 1))
+    fi
+else
+    echo "   [FAIL] /etc/shadow 파일이 존재하지 않습니다."
+    overall_status="Vulnerable"
+    issues_found=$((issues_found + 1))
+fi
+
+# 점검 결과 요약
+echo ""
+echo "=== 점검 결과 요약 ==="
+echo "전체 평가: $overall_status"
+echo "발견된 문제: $issues_found 개"
+if [ "$overall_status" == "Vulnerable" ]; then
+    echo "권장 조치사항: /etc/passwd 파일의 권한을 644로, /etc/shadow 파일의 권한을 600 또는 640으로 설정하세요."
+else
+    echo "모든 설정이 올바르게 구성되어 있습니다."
 fi
 ```
